@@ -55,3 +55,6 @@ chaquopy {
 tasks.named("preBuild") {
     dependsOn(copyHerMind)
 }
+tasks.matching { it.name.startsWith("merge") && it.name.endsWith("PythonSources") }.configureEach {
+    dependsOn(copyHerMind)
+}
