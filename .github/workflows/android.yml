@@ -1,0 +1,52 @@
+name: Awarenistic Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  her-mind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Her tests
+        run: |
+          pip install -r requirements.txt
+          python -m pytest tests -q
+      - name: The phone door reads a real script with her real mind
+        run: PYTHONPATH=.:android/app/src/main/python python android/check_phone_door.py
+
+  android:
+    needs: her-mind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.7"
+      - name: Build her Android side
+        run: gradle -p android assembleDebug --stacktrace
+      - name: She has no internet permission
+        run: |
+          AAPT="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/aapt"
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          "$AAPT" dump permissions "$APK"
+          if "$AAPT" dump permissions "$APK" | grep -q "android.permission.INTERNET"; then
+            echo "FAIL: the app asks for internet"; exit 1
+          fi
+          echo "PASS: no internet permission"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: awarenistic-android
+          path: android/app/build/outputs/apk/debug/app-debug.apk
