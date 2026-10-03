@@ -41,7 +41,6 @@ AWARENISTIC/
 ├── CHECKS.py         — Phone (Twilio, person's key) and mail (DNS + registry, no key).
 ├── CORE.py           — One message in, the whole thread read, the card out.
 ├── API.py            — The local door on 127.0.0.1:3600.
-├── .env.example      — Documents the two optional variables. No .env is used in this house.
 ├── .gitignore
 ├── requirements.txt  — Pinned to what was actually installed.
 └── tests/            — test_soul, test_safety, test_memory, test_core, plus conftest.
@@ -104,7 +103,9 @@ pytest tests/
 | AWARENISTIC_PORT | No | Port for the local door. Default 3600. Always bound to 127.0.0.1. |
 | AWARENISTIC_LEDGER | No | Path of the person's own record file. Default `awarenistic-ledger.jsonl` beside the being. |
 
-Twilio credentials are not environment variables. They are entered through POST /keys and are never written to disk.
+No .env file is used in this house. The two settings above are optional.
+
+Twilio credentials are not settings and never touch a file. The person drops them in the box in the interface (POST /keys); the being absorbs them and holds them in memory for the run only. Never kept, never written to disk, never shown back. When she stops, they are gone.
 
 ## Where It Was Born
 
