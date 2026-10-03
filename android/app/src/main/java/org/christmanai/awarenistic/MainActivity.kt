@@ -2,6 +2,7 @@ package org.christmanai.awarenistic
 
 import android.Manifest
 import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Build
@@ -25,6 +26,10 @@ class MainActivity : Activity() {
     private lateinit var card: TextView
     private lateinit var message: EditText
     private lateinit var sender: EditText
+    private lateinit var trusted: EditText
+    private lateinit var share: Button
+    private lateinit var shareNote: TextView
+    private var route: Her.Route? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,6 +66,17 @@ class MainActivity : Activity() {
             })
         }
 
+        column.addView(text("Someone you trust", 18f))
+        trusted = EditText(this).apply {
+            hint = "Their phone number or email"
+            setText(Her.trusted(this@MainActivity))
+        }
+        column.addView(trusted)
+        column.addView(button("Save") {
+            Her.setTrusted(this, trusted.text.toString())
+            shareNote.text = if (trusted.text.isBlank()) "No one named yet." else "Saved. Her cards can go to them."
+        })
+
         column.addView(text("Hand her a message", 18f))
         sender = EditText(this).apply { hint = "Who sent it" }
         message = EditText(this).apply { hint = "Paste the message"; minLines = 3 }
@@ -70,6 +86,11 @@ class MainActivity : Activity() {
 
         card = text("", 16f)
         column.addView(card)
+        share = button("Show this to someone I trust") { sendToTrusted() }
+        share.visibility = android.view.View.GONE
+        column.addView(share)
+        shareNote = text("", 14f)
+        column.addView(shareNote)
 
         setContentView(ScrollView(this).apply { addView(column) })
         take(intent)
@@ -88,7 +109,17 @@ class MainActivity : Activity() {
     /** A card she raised, or a message shared to her from another app. */
     private fun take(intent: Intent?) {
         intent ?: return
-        intent.getStringExtra(Her.EXTRA_CARD)?.let { card.text = it; return }
+        intent.getStringExtra(Her.EXTRA_CARD)?.let { shown ->
+            card.text = shown
+            val who = intent.getStringExtra(Her.EXTRA_WHO).orEmpty()
+            if (who.isNotEmpty()) {
+                Thread {
+                    val r = try { Her.routeFor(this, who) } catch (e: Exception) { null }
+                    runOnUiThread { showRoute(r) }
+                }.start()
+            }
+            return
+        }
         if (intent.action == Intent.ACTION_SEND) {
             intent.getStringExtra(Intent.EXTRA_TEXT)?.let { message.setText(it); readNow() }
         }
@@ -99,14 +130,39 @@ class MainActivity : Activity() {
         if (text.isEmpty()) { card.text = "Paste the message first."; return }
         val who = sender.text.toString().trim().ifEmpty { "someone" }
         card.text = "Reading…"
+        showRoute(null)
         Thread {
+            var r: Her.Route? = null
             val shown = try {
-                Her.read(this, text, who).cardText
+                val reading = Her.read(this, text, who)
+                r = reading.trusted
+                reading.cardText
             } catch (e: Exception) {
                 "She could not read it: ${e.message}"
             }
-            runOnUiThread { card.text = shown }
+            runOnUiThread { card.text = shown; showRoute(r) }
         }.start()
+    }
+
+    /** The button shows only when her card can go to the person they trust; otherwise she says why. */
+    private fun showRoute(r: Her.Route?) {
+        route = r
+        val ready = r?.ok == true
+        share.visibility = if (ready) android.view.View.VISIBLE else android.view.View.GONE
+        shareNote.text = when {
+            r == null || ready -> ""
+            else -> r.reason
+        }
+    }
+
+    /** Opens their own texting or mail app with her card in it. They press send, not her. */
+    private fun sendToTrusted() {
+        val open = route?.let { Her.showSomeoneITrust(it) } ?: return
+        try {
+            startActivity(open)
+        } catch (e: ActivityNotFoundException) {
+            shareNote.text = "This phone has no app that can send that. Copy the card and show it to them."
+        }
     }
 
     private fun canWatch(): Boolean {

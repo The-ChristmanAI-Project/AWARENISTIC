@@ -8,6 +8,7 @@ Version: 1.0.0
 
 from SOUL import BEING_NAME, TONE_CRISIS, TONE_DEFAULT
 from SAFETY import SIGN_LABEL
+from CHECKS import clean_phone, mails_in
 
 # The Army's own investigators (Army CID) publish what a real soldier never needs.
 # Quoted to the person, attributed to the Army, never claimed as our own verification.
@@ -123,3 +124,39 @@ def card_text(card: dict) -> str:
     for s in card["sources"]:
         lines.append(f"  {s['label']}: {s['url']}")
     return "\n".join(lines)
+
+
+def to_trusted(contact: str, card: dict, who: str = "") -> dict:
+    """
+    The trusted-contact organ, first built on the HONESTY desk: the person names someone they trust
+    once, and any card can go to that person with the person's own hand on it. This only writes the
+    message and says where it goes. It never sends. The phone or the desk opens the person's own
+    texting or mail app with it filled in, and the person presses send.
+
+    A phone number becomes a text. An address with @ becomes a mail with the card's heading as the
+    subject. Anything else is refused out loud. The card never goes to the stranger the card is about.
+    """
+    raw = (contact or "").strip()
+    if not raw:
+        return {"ok": False, "reason": "No one you trust is named yet."}
+    if not card.get("do_now"):
+        return {"ok": False, "reason": "There is nothing on this card to show anyone."}
+
+    body = card_text(card)
+    stranger = (who or "").lower()
+    if "@" in raw:
+        found = mails_in(raw)
+        if len(found) != 1:
+            return {"ok": False, "reason": f'"{raw}" is not one mail address.'}
+        address = found[0]
+        if address in stranger:
+            return {"ok": False, "reason": "That address belongs to the person on the card. It never goes to them."}
+        return {"ok": True, "kind": "mail", "to": address,
+                "subject": f"Please read this: {card['heading']}", "body": body}
+
+    number = clean_phone(raw)
+    if not number:
+        return {"ok": False, "reason": f'"{raw}" is not a phone number or a mail address.'}
+    if number.lstrip("+") in "".join(ch for ch in stranger if ch.isdigit()):
+        return {"ok": False, "reason": "That number belongs to the person on the card. It never goes to them."}
+    return {"ok": True, "kind": "text", "to": number, "subject": "", "body": body}

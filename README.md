@@ -43,7 +43,7 @@ AWARENISTIC/
 ├── API.py            — The local door on 127.0.0.1:3600.
 ├── .gitignore
 ├── requirements.txt  — Pinned to what was actually installed.
-└── tests/            — test_soul, test_safety, test_memory, test_core, plus conftest.
+└── tests/            — test_soul, test_safety, test_memory, test_core, test_trusted, plus conftest.
 ```
 
 ## Getting Started
@@ -93,7 +93,7 @@ curl http://127.0.0.1:3600/health
 
 ```bash
 pytest tests/
-# 37 tests. Safety first. All four files must pass before this being is considered alive.
+# 44 tests. Safety first. All five files must pass before this being is considered alive.
 ```
 
 ## Environment Variables
@@ -113,10 +113,10 @@ Awarenistic began as a section inside HONESTY (github.com/The-ChristmanAI-Projec
 
 ## Not Built Yet, Said Plainly
 
-- Reading messages straight off a phone's mail, SMS, or call log. Today the interface hands messages to the door; the phone-side reader is the next organ.
+- Reading a phone's own SMS, mail, or call log. On Android she reads incoming messages from the apps the person chooses (WhatsApp, Messenger, Telegram and the rest) through notification access; the carrier's own SMS, mail and calls are not read.
 - Photo check, so a stolen soldier's face gets caught. No reverse-image service has been chosen.
 - Voice. The calls are where the pressure happens; the Filament already hears, and is not yet wired here.
-- The trusted-contact alarm. Today the card says show this to someone you trust; the silent alarm to a named person, the way Sierra does it, is not built.
+- A silent alarm to the trusted person, the way Sierra does it. What is built (2026-10-03): the person names someone they trust once, and any card that is not clear can go to them as a text or a mail, opened in the person's own app with the card written in. The person presses send. A silent alarm would send without the person's hand on it, which her SOUL forbids, so it waits on Everett's word.
 
 ## Cardinal Rules Compliance
 
